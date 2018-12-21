@@ -1,8 +1,13 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#include "helper.hpp"
+#include <vector>
+
+#include "helper.h"
 
 #define TARGET_FPS 30
 
@@ -15,80 +20,113 @@ GLuint idVertexShader;
 GLuint idJpegTexture;
 GLuint idMVPMatrix;
 
+glm::vec3 cameraPos;
+glm::vec3 cameraFront;
+glm::vec3 cameraUp;
+glm::mat4x4 viewMatrix;
+glm::mat4 projectionMatrix;
+
 int widthTexture, heightTexture;
 
 bool isFull = false;
 bool isPressed = false;
 float heightFactor = 10.0;
+float cameraSpeed = 0.0f;
 
 void initializeWindow(GLFWwindow* window);
 void processInput(GLFWwindow* window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void initVertices(float vertices[]);
+void setUpCamera();
 
 void drawTest();
+void generateHeightMap();
 
 static void errorCallback(int error,
                           const char * description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
+#pragma pack(push, 1)
+struct vertex {
+    float xPos;
+    float yPos;
+    float zPos;
+    float xTexPos;
+    float yTexPos;
+};
+#pragma pack(pop)
+
+void initVerticesV(std::vector<vertex> &vertices);
+
 int main(int argc, char * argv[]) {
-    {
-        if (argc != 2) {
-            printf("Only one texture image expected!\n");
-            exit(-1);
-        }
-        
-        glfwSetErrorCallback(errorCallback);
-        
-        if (!glfwInit()) {
-            exit(-1);
-        }
-        
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        
-        glewExperimental = GL_TRUE;
-        
-        win = glfwCreateWindow(600, 600, "CENG477 - HW3", NULL, NULL);
-        initializeWindow(win);
-        
-        if (!win) {
-            glfwTerminate();
-            exit(-1);
-        }
-        
-        GLenum err = glewInit();
-        if (err != GLEW_OK) {
-            fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-            
-            glfwTerminate();
-            exit(-1);
-        }
+    
+    if (argc != 2) {
+        printf("Only one texture image expected!\n");
+        exit(-1);
     }
     
-    glViewport(0, 0, 600, 600);
+    glfwSetErrorCallback(errorCallback);
     
+    if (!glfwInit()) {
+        exit(-1);
+    }
+    
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    
+    win = glfwCreateWindow(600, 600, "CENG477 - HW3", nullptr, nullptr);
+    
+    if (!win) {
+        glfwTerminate();
+        exit(-1);
+    }
+    
+    glfwMakeContextCurrent(win);
+    glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
+    
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+        glfwTerminate();
+        exit(-1);
+    }
+    
+    
+    glEnable(GL_DEPTH_TEST);
     initShaders();
-    glUseProgram(idProgramShader);
     initTexture(argv[1], & widthTexture, & heightTexture);
     
-    float vertices[3 * (heightTexture + 1) * (widthTexture + 1)];
-    initVertices(vertices);
+    std::vector<vertex> verticesV((heightTexture + 1) * (widthTexture + 1));
     
-    unsigned int VBO;
+    initVerticesV(verticesV);
+    
+    unsigned int VAO, VBO;
+    glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glBindVertexArray(VAO);
     
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, verticesV.size() * sizeof(vertex), verticesV.data(), GL_DYNAMIC_DRAW);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) 0);
     glEnableVertexAttribArray(0);
     
-    //    glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    
+    glUseProgram(idProgramShader);
+    
+    glBindVertexArray(VAO);
+    
+    setUpCamera();
+    projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+    unsigned int MVPLoc = glGetUniformLocation(idProgramShader, "MVP");
+    glUniformMatrix4fv(MVPLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+    
     
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(win)) {
@@ -98,11 +136,14 @@ int main(int argc, char * argv[]) {
         glClearColor(0.2f, 0.4f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+        viewMatrix = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        unsigned int MVLoc = glGetUniformLocation(idProgramShader, "MV");
+        glUniformMatrix4fv(MVLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        
         processInput(win);
         
-        drawTest();
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //        glDrawArrays(GL_TRIANGLES, 0, heightTexture * widthTexture * 2);
+        glDrawArrays(GL_TRIANGLES, 0, (heightTexture + 1) * (widthTexture + 1));
+        
         
         glfwSwapBuffers(win);
         glfwPollEvents();
@@ -119,66 +160,74 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, TRUE);
     }
     
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !isFull) {
-        isFull = true;
-        glfwDestroyWindow(window);
-        win = glfwCreateWindow(600, 600, "CENG477 - HW3", glfwGetPrimaryMonitor(), NULL);
-        initializeWindow(win);
-    }
-    
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && isFull) {
-        isFull = false;
-        glfwDestroyWindow(window);
-        win = glfwCreateWindow(600, 600, "CENG477 - HW3", NULL, NULL);
-        initializeWindow(win);
-    }
+    //    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !isFull) {
+    //        isFull = true;
+    //        glfwDestroyWindow(window);
+    //        win = glfwCreateWindow(600, 600, "CENG477 - HW3", glfwGetPrimaryMonitor(), NULL);
+    //        initializeWindow(win);
+    //    }
+    //
+    //    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && isFull) {
+    //        isFull = false;
+    //        glfwDestroyWindow(window);
+    //        win = glfwCreateWindow(600, 600, "CENG477 - HW3", NULL, NULL);
+    //        initializeWindow(win);
+    //    }
     
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !isPressed) {
         heightFactor += 0.5f;
-        //        isPressed = true;
         glUniform1f(glGetUniformLocation(idProgramShader, "heightFactor"), heightFactor);
-        cout << heightFactor << std::endl;
     }
     
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
         heightFactor -= 0.5f;
-        //        isPressed = true;
         glUniform1f(glGetUniformLocation(idProgramShader, "heightFactor"), heightFactor);
-        cout << heightFactor << std::endl;
     }
     
-    //    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_RELEASE && isPressed) {
-    //        isPressed = false;
-    //    }
-    //
-    //    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS && isPressed) {
-    //        isPressed = false;
-    //    }
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void initializeWindow(GLFWwindow* window) {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
+        cameraSpeed += 0.5f;
+        cout << cameraSpeed << endl;
+    }
     
-    glewExperimental = GL_TRUE;
-    glewInit();
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+        cameraSpeed -= 0.5f;
+        if (cameraSpeed < 0) {
+            cameraSpeed = 0;
+        }
+    }
     
-    glfwMakeContextCurrent(window);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPos += cameraSpeed * cameraFront;
+        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPos -= cameraSpeed * cameraFront;
+        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cout << cameraFront.x << ' '<< cameraFront.y << ' ' << cameraFront.z << std::endl;
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+    }
+    
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+    }
 }
 
-void initVertices(float vertices[]) {
+void initVerticesV(std::vector<vertex> & vertices) {
     for (int i = 0; i <= heightTexture; i++) {
         for (int  j = 0; j <= widthTexture; j++) {
-            vertices[i * (widthTexture * 3) + j * 3 + 0] = (float) j;
-            vertices[i * (widthTexture * 3) + j * 3 + 1] = 0.0f;
-            vertices[i * (widthTexture * 3) + j * 3 + 2] = (float) i;
+            vertices[i * widthTexture+ j].xPos = (float) j;
+            vertices[i * widthTexture+ j].yPos = 0.0f;
+            vertices[i * widthTexture+ j].zPos = (float) i;
+            vertices[i * widthTexture+ j].xTexPos = (float) j / widthTexture;
+            vertices[i * widthTexture+ j].yTexPos = (float) i / heightTexture;
+            //            cout << vertices[i * widthTexture+ j].xPos << ' ' << vertices[i * widthTexture+ j].yPos << ' ' <<
+            //            vertices[i * widthTexture+ j].zPos << ' ' << vertices[i * widthTexture+ j].xTexPos << ' ' << vertices[i * widthTexture+ j].yTexPos << std::endl;
         }
     }
 }
@@ -210,13 +259,29 @@ void drawTest() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glUseProgram(idProgramShader);
+    
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindVertexArray(VAO);
+}
+
+void setUpCamera() {
+    cameraPos = glm::vec3(widthTexture / 2, widthTexture / 10, - heightTexture / 4);
     
-    // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    cameraFront = glm::vec3(0.0, 0.0, 1.0);
+    glm::vec3 up = glm::vec3(0.0f, 1.0, 0.0);
+    glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraFront));
+    cameraUp = glm::cross(cameraFront, cameraRight);
     
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0);
+    viewMatrix = glm::lookAt(cameraPos, cameraFront, cameraUp);
+    unsigned int MVLoc = glGetUniformLocation(idProgramShader, "MV");
+    glUniformMatrix4fv(MVLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    // make sure the viewport matches the new window dimensions; note that width and
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
 }
