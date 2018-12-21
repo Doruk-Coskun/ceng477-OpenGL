@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "helper.h"
+#include "helper.hpp"
 
 #define TARGET_FPS 30
 
@@ -45,6 +45,16 @@ static void errorCallback(int error,
                           const char * description) {
     fprintf(stderr, "Error: %s\n", description);
 }
+
+#pragma pack(push, 1)
+struct indexV {
+    unsigned int first;
+    unsigned int second;
+    unsigned int third;
+};
+#pragma pack(pop)
+
+void initIndices(std::vector<indexV> &indices);
 
 #pragma pack(push, 1)
 struct vertex {
@@ -100,14 +110,20 @@ int main(int argc, char * argv[]) {
     initTexture(argv[1], & widthTexture, & heightTexture);
     
     std::vector<vertex> verticesV((heightTexture + 1) * (widthTexture + 1));
+    std::vector<indexV> indicesV(2 * (heightTexture + 1) * (widthTexture + 1));
     
     initVerticesV(verticesV);
+    initIndices(indicesV);
     
-    unsigned int VAO, VBO;
+    unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
     
     glBindVertexArray(VAO);
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesV.size() * sizeof(indexV), indicesV.data(), GL_STATIC_DRAW);
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, verticesV.size() * sizeof(vertex), verticesV.data(), GL_DYNAMIC_DRAW);
@@ -118,6 +134,8 @@ int main(int argc, char * argv[]) {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *) (3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     
+    
+    
     glUseProgram(idProgramShader);
     
     glBindVertexArray(VAO);
@@ -127,6 +145,7 @@ int main(int argc, char * argv[]) {
     unsigned int MVPLoc = glGetUniformLocation(idProgramShader, "MVP");
     glUniformMatrix4fv(MVPLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
     
+    //    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(win)) {
@@ -142,7 +161,8 @@ int main(int argc, char * argv[]) {
         
         processInput(win);
         
-        glDrawArrays(GL_TRIANGLES, 0, (heightTexture + 1) * (widthTexture + 1));
+        glDrawElements(GL_TRIANGLES, 2 * (heightTexture + 1) * (widthTexture + 1), GL_UNSIGNED_INT, 0);
+        //        glDrawArrays(GL_TRIANGLES, 0, (heightTexture + 1) * (widthTexture + 1));
         
         
         glfwSwapBuffers(win);
@@ -228,6 +248,23 @@ void initVerticesV(std::vector<vertex> & vertices) {
             vertices[i * widthTexture+ j].yTexPos = (float) i / heightTexture;
             //            cout << vertices[i * widthTexture+ j].xPos << ' ' << vertices[i * widthTexture+ j].yPos << ' ' <<
             //            vertices[i * widthTexture+ j].zPos << ' ' << vertices[i * widthTexture+ j].xTexPos << ' ' << vertices[i * widthTexture+ j].yTexPos << std::endl;
+        }
+    }
+}
+
+void initIndices(std::vector<indexV> &indices) {
+    int counter = 0;
+    for (int i = 0; i < heightTexture; i++) {
+        for (int j = 0; j < widthTexture - 1 ; j++) {
+            indices[counter].first =  i * widthTexture + j;
+            indices[counter].second = (i + 1) * widthTexture + j;
+            indices[counter].third = i * widthTexture + j + 1;
+            
+            indices[counter + 1].first =  (i + 1) * widthTexture + j;
+            indices[counter + 1].second = (i + 1) * widthTexture + j + 1;
+            indices[counter + 1].third = i * widthTexture + j + 1;
+            
+            counter += 2;
         }
     }
 }
