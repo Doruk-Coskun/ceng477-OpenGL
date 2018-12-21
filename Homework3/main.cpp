@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "helper.hpp"
+#include "helper.h"
 
 #define TARGET_FPS 30
 
@@ -32,6 +32,12 @@ bool isFull = false;
 bool isPressed = false;
 float heightFactor = 10.0;
 float cameraSpeed = 0.0f;
+
+float yaw = 90.0f; // 0 -> right, -90 -> forward
+float pitch = 0.0f; 
+
+float lastX = 300;  // width / 2
+float lastY = 300;  // height / 2
 
 void initializeWindow(GLFWwindow* window);
 void processInput(GLFWwindow* window);
@@ -146,6 +152,7 @@ int main(int argc, char * argv[]) {
     glUniformMatrix4fv(MVPLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
     
     //    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // cout << "Front: " << cameraFront.x << ' ' << cameraFront.y << ' ' << cameraFront.z << '\n';
     
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(win)) {
@@ -167,6 +174,10 @@ int main(int argc, char * argv[]) {
         
         glfwSwapBuffers(win);
         glfwPollEvents();
+
+        // Go forward
+        //cout << "Pos: " << cameraPos.x << ' ' << cameraPos.y << ' ' << cameraPos.z << '\n';
+        cameraPos += cameraSpeed * cameraFront;
     }
     
     glfwDestroyWindow(win);
@@ -176,6 +187,10 @@ int main(int argc, char * argv[]) {
 }
 
 void processInput(GLFWwindow* window) {
+    float sensitivity = 0.05f;
+    float yoffset = 20.0f;
+    float xoffset = 20.0f;
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, TRUE);
     }
@@ -217,24 +232,65 @@ void processInput(GLFWwindow* window) {
     }
     
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cameraPos += cameraSpeed * cameraFront;
-        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+
+        pitch += yoffset * sensitivity;
+
+        // Restrict the pitch to < 90 degrees
+        if (pitch > 89.0f) {
+            pitch = 89.0f;
+        }
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(front);
+
+        // cout << cameraFront.x << ' ' << cameraFront.y << ' ' << cameraFront.z << '\n';
     }
     
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cameraPos -= cameraSpeed * cameraFront;
-        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+
+        pitch -= yoffset * sensitivity;
+
+        // Restrict the pitch
+        if (pitch < -89.0f) {
+            pitch = -89.0f;
+        }
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+
+        cameraFront = glm::normalize(front);
+
+        // cout << cameraFront.x << ' ' << cameraFront.y << ' ' << cameraFront.z << '\n';
+ 
     }
     
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cout << cameraFront.x << ' '<< cameraFront.y << ' ' << cameraFront.z << std::endl;
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+
+        yaw -= xoffset * sensitivity;;
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(front);
+
     }
     
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        cout << cameraPos.x << ' '<< cameraPos.y << ' ' << cameraPos.z << std::endl;
+
+        yaw += xoffset * sensitivity;
+
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        cameraFront = glm::normalize(front);
+
     }
 }
 
@@ -306,7 +362,14 @@ void drawTest() {
 void setUpCamera() {
     cameraPos = glm::vec3(widthTexture / 2, widthTexture / 10, - heightTexture / 4);
     
-    cameraFront = glm::vec3(0.0, 0.0, 1.0);
+    // cameraFront = glm::vec3(0.0, 0.0, 1.0);
+    // TODO: tidy up later
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(front);
+
     glm::vec3 up = glm::vec3(0.0f, 1.0, 0.0);
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraFront));
     cameraUp = glm::cross(cameraFront, cameraRight);
