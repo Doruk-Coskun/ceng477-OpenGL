@@ -33,6 +33,7 @@ void main()
     vertexNormal = vec3(0.0, 1.0, 0.0);
     
     // compute normal vector using also the heights of neighbor vertices
+    // TODO: Improve vertexNormal calculation
     float heightL, heightR, heightB, heightT;
     vec2 texCorL, texCorR, texCorB, texCorT;
     vec3 posL, posR, posB, posT;
@@ -67,6 +68,5 @@ void main()
     ToCameraVector = normalize(cameraPosition.xyz - vec3(aPos.x, height, aPos.z));
     
     // set gl_Position variable correctly to give the transformed vertex position
-    //
     gl_Position = MVP * MV * vec4(aPos.x, height, aPos.z, 1.0f); // this is a placeholder. It does not correctly set the position
 }
