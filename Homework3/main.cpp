@@ -1,13 +1,19 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+/*
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+*/
 
 #include <vector>
 
 #include "helper.h"
+#include "bundled-glm/glm.hpp"
+#include "bundled-glm/gtc/matrix_transform.hpp"
+#include "bundled-glm/gtc/type_ptr.hpp"
+
 
 #define TARGET_FPS 30
 
