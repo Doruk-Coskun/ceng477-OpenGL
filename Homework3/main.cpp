@@ -1,11 +1,6 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-/*
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-*/
 
 #include <vector>
 
@@ -32,9 +27,13 @@ glm::vec3 cameraUp;
 glm::mat4x4 viewMatrix;
 glm::mat4 projectionMatrix;
 
+
 int widthTexture, heightTexture;
 
-bool isFull = false;
+int screenWidth = 1366;
+int screenHeight = 768;
+
+bool isFullscreen = false;
 bool isPressed = false;
 float heightFactor = 10.0;
 float cameraSpeed = 0.0f;
@@ -96,7 +95,7 @@ int main(int argc, char * argv[]) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     
-    win = glfwCreateWindow(600, 600, "CENG477 - HW3", nullptr, nullptr);
+    win = glfwCreateWindow(screenWidth, screenHeight, "CENG477 - HW3", nullptr, nullptr);
     
     if (!win) {
         glfwTerminate();
@@ -198,19 +197,28 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, TRUE);
     }
     
-    //    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !isFull) {
-    //        isFull = true;
-    //        glfwDestroyWindow(window);
-    //        win = glfwCreateWindow(600, 600, "CENG477 - HW3", glfwGetPrimaryMonitor(), NULL);
-    //        initializeWindow(win);
-    //    }
-    //
-    //    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && isFull) {
-    //        isFull = false;
-    //        glfwDestroyWindow(window);
-    //        win = glfwCreateWindow(600, 600, "CENG477 - HW3", NULL, NULL);
-    //        initializeWindow(win);
-    //    }
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        if (!isFullscreen) {
+            // Set fullscreen
+            glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(),
+                    0,  // Desired x-coordinate of the upper-left corner
+                    0,  // Desired y-coordinate of the upper-left corner
+                    screenWidth, // Desired width in screen coordinates
+                    screenHeight, // Desired height in screen coordinates
+                    GLFW_DONT_CARE
+                    );
+        } else {
+            // Go back to windowed mode
+            glfwSetWindowMonitor(window, NULL,
+                    100,  // Desired x-coordinate of the upper-left corner
+                    100,  // Desired y-coordinate of the upper-left corner
+                    screenWidth, // Desired width in screen coordinates
+                    screenHeight, // Desired height in screen coordinates
+                    GLFW_DONT_CARE
+                    );
+        }
+        isFullscreen = !isFullscreen;
+    }
     
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !isPressed) {
         heightFactor += 0.5f;
