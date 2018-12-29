@@ -332,13 +332,19 @@ void initIndices(std::vector<indexV> &indices) {
 void setUpCamera() {
     cameraPos = glm::vec3(widthTexture / 2, widthTexture / 10, - heightTexture / 4);
     
-    // cameraFront = glm::vec3(0.0, 0.0, 1.0);
-    // TODO: tidy up later
+    // With the initial pitch & yaw values, we have a camera front of (0,0,1). But we can
+    // just set it here as well
+    cameraFront = { 0, 0, 1};
+
+    /* Alternatively...
     glm::vec3 front;
     front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
     front.y = sin(glm::radians(pitch));
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
+    */
+
+    // std::cout << "Camera Front: " << cameraFront.x << ',' << cameraFront.y << ',' << cameraFront.z << std::endl;
     
     glm::vec3 up = glm::vec3(0.0f, 1.0, 0.0);
     glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraFront));
@@ -349,7 +355,6 @@ void setUpCamera() {
     glUniformMatrix4fv(MVLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 }
 
-// TODO: How to use this?
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and
