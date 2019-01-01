@@ -35,6 +35,10 @@ int screenHeight = 768;
 
 bool isFullscreen = false;
 bool isPressed = false;
+
+// Store button states
+bool fKeyPressed = false;
+
 float heightFactor = 10.0;
 float cameraSpeed = 0.0f;
 
@@ -192,12 +196,15 @@ void processInput(GLFWwindow* window) {
     float sensitivity = 0.05f;
     float yoffset = 20.0f;
     float xoffset = 20.0f;
+    // Store key states
+    int key;
     
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, TRUE);
     }
     
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+    if ((key = glfwGetKey(window, GLFW_KEY_F)) == GLFW_PRESS && !fKeyPressed) {
+        fKeyPressed = true;
         if (!isFullscreen) {
             // Set fullscreen
             glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(),
@@ -218,6 +225,8 @@ void processInput(GLFWwindow* window) {
                     );
         }
         isFullscreen = !isFullscreen;
+    } else if (key == GLFW_RELEASE && fKeyPressed) {
+        fKeyPressed = false;
     }
     
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS && !isPressed) {
@@ -232,7 +241,7 @@ void processInput(GLFWwindow* window) {
     
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
         cameraSpeed += 0.5f;
-        cout << cameraSpeed << endl;
+        // cout << cameraSpeed << endl;
     }
     
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
@@ -240,7 +249,7 @@ void processInput(GLFWwindow* window) {
         if (cameraSpeed < 0) {
             cameraSpeed = 0;
         }
-        cout << cameraSpeed << endl;
+        // cout << cameraSpeed << endl;
     }
     
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
