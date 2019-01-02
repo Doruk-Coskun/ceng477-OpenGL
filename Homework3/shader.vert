@@ -30,7 +30,7 @@ void main()
     
     float height = heightFactor * (texColor.x * 0.2126 + texColor.y * 0.7152 + texColor.z * 0.0722);
     
-    vertexNormal = vec3(0.0, 1.0, 0.0);
+    // vertexNormal = vec3(0.0, 1.0, 0.0);
     
     // compute normal vector using also the heights of neighbor vertices
     float heightL, heightR, heightB, heightT, heightTR, heightBL;
@@ -86,12 +86,13 @@ void main()
          *  x---x---.
          */
 
-         vec3 norm1 = cross((posT - aPos), (posL - aPos));
-         vec3 norm2 = cross((posTR - aPos), (posT - aPos));
-         vec3 norm3 = cross((posR - aPos), (posTR - aPos));
-         vec3 norm4 = cross((posB - aPos), (posR - aPos));
-         vec3 norm5 = cross((posBL - aPos), (posB - aPos));
-         vec3 norm6 = cross((posL - aPos), (posBL - aPos));
+         // Apparently we have to have the normals going *into* the screen, as opposed to going out
+         vec3 norm1 = -cross((posT - aPos), (posL - aPos));
+         vec3 norm2 = -cross((posTR - aPos), (posT - aPos));
+         vec3 norm3 = -cross((posR - aPos), (posTR - aPos));
+         vec3 norm4 = -cross((posB - aPos), (posR - aPos));
+         vec3 norm5 = -cross((posBL - aPos), (posB - aPos));
+         vec3 norm6 = -cross((posL - aPos), (posBL - aPos));
 
          // Get the average of the adjacent triangle normals
          vertexNormal = norm1 + norm2 + norm3 + norm4 + norm5 + norm6;
