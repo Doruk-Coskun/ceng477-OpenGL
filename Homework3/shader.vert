@@ -33,12 +33,14 @@ void main()
     vertexNormal = vec3(0.0, 1.0, 0.0);
     
     // compute normal vector using also the heights of neighbor vertices
-    // TODO: Improve vertexNormal calculation
-    float heightL, heightR, heightB, heightT;
-    vec2 texCorL, texCorR, texCorB, texCorT;
-    vec3 posL, posR, posB, posT;
-    vec4 colorL, colorR, colorB, colorT;
+    float heightL, heightR, heightB, heightT, heightTR, heightBL;
+    vec2 texCorL, texCorR, texCorB, texCorT, texCorTR, texCorBL;
+
+    vec3 posL, posR, posB, posT, posTR, posBL;
+    vec4 colorL, colorR, colorB, colorT, colorTR, colorBL;
+
     if (aPos.x < widthTexture && aPos.x > 0 && aPos.z < heightTexture && aPos.z > 0) {
+        // Get values for all neighboring vertices
         posL = aPos - vec3(1, 0, 0);
         texCorL = vec2(posL.x / widthTexture, posL.z / heightTexture);
         colorL = texture(rgbTexture, texCorL);
@@ -59,7 +61,42 @@ void main()
         colorT = texture(rgbTexture, texCorT);
         heightT = heightFactor * (colorT.x * 0.2126 + colorT.y * 0.7152 + colorT.z * 0.0722);
         
-        vertexNormal = normalize(vec3(heightL - heightR, 2.0, heightB - heightT));
+        posTR = aPos + vec3(1, 0, 1);
+        texCorTR = vec2(posTR.x / widthTexture, posTR.z / heightTexture);
+        colorTR = texture(rgbTexture, texCorTR);
+        heightTR = heightFactor * (colorTR.x * 0.2126 + colorTR.y * 0.7152 + colorTR.z * 0.0722);
+
+
+        posBL = aPos - vec3(1, 0, 1);
+        texCorBL = vec2(posBL.x / widthTexture, posBL.z / heightTexture);
+        colorBL = texture(rgbTexture, texCorBL);
+        heightBL = heightFactor * (colorBL.x * 0.2126 + colorBL.y * 0.7152 + colorBL.z * 0.0722);
+
+        /* Get normal vectors of adjacent triangles
+         * For reference:
+         *
+         *  .---x---x
+         *  |  /|2 /|
+         *  | / | / |
+         *  |/1 |/ 3|
+         *  x---o---x     Where  o -> the current vertex
+         *  |4 /|6 /|            x -> adjacent vertices
+         *  | / | / |            . -> other vertices
+         *  |/ 5|/  |
+         *  x---x---.
+         */
+
+         vec3 norm1 = cross((posT - aPos), (posL - aPos));
+         vec3 norm2 = cross((posTR - aPos), (posT - aPos));
+         vec3 norm3 = cross((posR - aPos), (posTR - aPos));
+         vec3 norm4 = cross((posB - aPos), (posR - aPos));
+         vec3 norm5 = cross((posBL - aPos), (posB - aPos));
+         vec3 norm6 = cross((posL - aPos), (posBL - aPos));
+
+         // Get the average of the adjacent triangle normals
+         vertexNormal = norm1 + norm2 + norm3 + norm4 + norm5 + norm6;
+         vertexNormal = normalize(vec3(vertexNormal.x / 6.0f, vertexNormal.y / 6.0f, vertexNormal.z / 6.0f));
+
     }
     
     // compute toLight vector vertex coordinate in VCS
