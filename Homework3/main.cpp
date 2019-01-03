@@ -315,8 +315,8 @@ void initVerticesV(std::vector<vertex> & vertices) {
             vertices[i * widthTexture+ j].xPos = (float) j;
             vertices[i * widthTexture+ j].yPos = 0.0f;
             vertices[i * widthTexture+ j].zPos = (float) i;
-            vertices[i * widthTexture+ j].xTexPos = (float) j / widthTexture;
-            vertices[i * widthTexture+ j].yTexPos = (float) i / heightTexture;
+            vertices[i * widthTexture+ j].xTexPos = (float) -j / widthTexture;
+            vertices[i * widthTexture+ j].yTexPos = (float) -i / heightTexture;
         }
     }
 }

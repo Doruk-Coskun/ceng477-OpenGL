@@ -6,12 +6,12 @@ CXX = g++
 
 # General flags
 CXXFLAGS = -std=c++11 
-LDFLAGS = -lm -lpthread -ldl -ldrm -ljpeg
-GLFLAGS = -lGL -lglfw  -lGLEW
+LDFLAGS = -lpthread -ljpeg
+GLFLAGS = -lglfw  -lGLEW
 
 # Add X flags for X11 systems
 ifeq ($(UNAME), Linux)
-	LDFLAGS += -lXdamage -lX11-xcb -lxcb-glx -xcb-dri2 -lXrandr -lXinerama -lXxf86vm -lXext -lXcursor -lXrender -lXfixes -lX11 -lxcb -lXau -lXdmcp
+	LDFLAGS += -lm -ldl -ldrm -lGL -lXdamage -lX11-xcb -lxcb-glx -xcb-dri2 -lXrandr -lXinerama -lXxf86vm -lXext -lXcursor -lXrender -lXfixes -lX11 -lxcb -lXau -lXdmcp
 endif
 
 # Add Darwin-specific linking flags

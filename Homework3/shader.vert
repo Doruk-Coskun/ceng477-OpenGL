@@ -42,35 +42,41 @@ void main()
     if (aPos.x < widthTexture && aPos.x > 0 && aPos.z < heightTexture && aPos.z > 0) {
         // Get values for all neighboring vertices
         posL = aPos - vec3(1, 0, 0);
-        texCorL = vec2(posL.x / widthTexture, posL.z / heightTexture);
+        texCorL = vec2(-posL.x / widthTexture, -posL.z / heightTexture);
         colorL = texture(rgbTexture, texCorL);
         heightL = heightFactor * (colorL.x * 0.2126 + colorL.y * 0.7152 + colorL.z * 0.0722);
+        posL.y = heightL;
         
         posR = aPos + vec3(1, 0, 0);
-        texCorR = vec2(posR.x / widthTexture, posR.z / heightTexture);
+        texCorR = vec2(-posR.x / widthTexture, -posR.z / heightTexture);
         colorR = texture(rgbTexture, texCorR);
         heightR = heightFactor * (colorR.x * 0.2126 + colorR.y * 0.7152 + colorR.z * 0.0722);
+        posR.y = heightR;
         
         posB = aPos - vec3(0, 0, 1);
-        texCorB = vec2(posB.x / widthTexture, posB.z / heightTexture);
+        texCorB = vec2(-posB.x / widthTexture, -posB.z / heightTexture);
         colorB = texture(rgbTexture, texCorB);
         heightB = heightFactor * (colorB.x * 0.2126 + colorB.y * 0.7152 + colorB.z * 0.0722);
+        posB.y = heightB;
         
         posT = aPos + vec3(0, 0, 1);
-        texCorT = vec2(posT.x / widthTexture, posT.z / heightTexture);
+        texCorT = vec2(-posT.x / widthTexture, -posT.z / heightTexture);
         colorT = texture(rgbTexture, texCorT);
         heightT = heightFactor * (colorT.x * 0.2126 + colorT.y * 0.7152 + colorT.z * 0.0722);
+        posT.y = heightT;
         
         posTR = aPos + vec3(1, 0, 1);
-        texCorTR = vec2(posTR.x / widthTexture, posTR.z / heightTexture);
+        texCorTR = vec2(-posTR.x / widthTexture, -posTR.z / heightTexture);
         colorTR = texture(rgbTexture, texCorTR);
         heightTR = heightFactor * (colorTR.x * 0.2126 + colorTR.y * 0.7152 + colorTR.z * 0.0722);
+        posTR.y = heightTR;
 
 
         posBL = aPos - vec3(1, 0, 1);
-        texCorBL = vec2(posBL.x / widthTexture, posBL.z / heightTexture);
+        texCorBL = vec2(-posBL.x / widthTexture, -posBL.z / heightTexture);
         colorBL = texture(rgbTexture, texCorBL);
         heightBL = heightFactor * (colorBL.x * 0.2126 + colorBL.y * 0.7152 + colorBL.z * 0.0722);
+        posBL.y = heightBL;
 
         /* Get normal vectors of adjacent triangles
          * For reference:
@@ -97,6 +103,8 @@ void main()
          // Get the average of the adjacent triangle normals
          vertexNormal = norm1 + norm2 + norm3 + norm4 + norm5 + norm6;
          vertexNormal = normalize(vec3(vertexNormal.x / 6.0f, vertexNormal.y / 6.0f, vertexNormal.z / 6.0f));
+        
+//        vertexNormal = normalize(vec3(heightL - heightR, 2.0f, heightB - heightT));
 
     }
     
