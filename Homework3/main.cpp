@@ -30,8 +30,8 @@ glm::mat4 projectionMatrix;
 
 int widthTexture, heightTexture;
 
-int screenWidth = 1366;
-int screenHeight = 768;
+int screenWidth = 800;
+int screenHeight = 800;
 
 bool isFullscreen = false;
 bool isPressed = false;
@@ -50,7 +50,7 @@ float lastY = 300;  // height / 2
 
 void initializeWindow(GLFWwindow* window);
 void processInput(GLFWwindow* window);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void window_size_callback(GLFWwindow* window, int width, int height);
 void setUpCamera();
 
 void drawTest();
@@ -107,7 +107,6 @@ int main(int argc, char * argv[]) {
     }
     
     glfwMakeContextCurrent(win);
-    glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
     
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
@@ -160,10 +159,13 @@ int main(int argc, char * argv[]) {
     glUniform1i(glGetUniformLocation(idProgramShader, "widthTexture"), widthTexture);
     glUniform1i(glGetUniformLocation(idProgramShader, "heightTexture"), heightTexture);
     
+    glfwSetWindowSizeCallback(win, window_size_callback);
+    
     double lastTime = glfwGetTime();
     while (!glfwWindowShouldClose(win)) {
         while (glfwGetTime() < lastTime + 1.0/TARGET_FPS) {}
         lastTime += 1.0/TARGET_FPS;
+        
         
         glClearColor(0.2f, 0.4f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -207,6 +209,8 @@ void processInput(GLFWwindow* window) {
         fKeyPressed = true;
         if (!isFullscreen) {
             // Set fullscreen
+            
+            
             glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(),
                     0,  // Desired x-coordinate of the upper-left corner
                     0,  // Desired y-coordinate of the upper-left corner
@@ -214,6 +218,7 @@ void processInput(GLFWwindow* window) {
                     screenHeight, // Desired height in screen coordinates
                     GLFW_DONT_CARE
                     );
+            
         } else {
             // Go back to windowed mode
             glfwSetWindowMonitor(window, NULL,
@@ -339,7 +344,7 @@ void initIndices(std::vector<indexV> &indices) {
 }
 
 void setUpCamera() {
-    cameraPos = glm::vec3(widthTexture / 2, widthTexture / 10, - heightTexture / 4);
+    cameraPos = glm::vec3(widthTexture / 2, widthTexture / 10, - widthTexture / 4);
     
     // With the initial pitch & yaw values, we have a camera front of (0,0,1). But we can
     // just set it here as well
@@ -364,9 +369,11 @@ void setUpCamera() {
     glUniformMatrix4fv(MVLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void window_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
+    screenWidth = width;
+    screenHeight = height;
     glViewport(0, 0, width, height);
 }

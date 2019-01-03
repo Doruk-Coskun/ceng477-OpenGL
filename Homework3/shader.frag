@@ -40,8 +40,12 @@ void main() {
     vec4 diffuse = max(dot(ToLightVector, vertexNormal), 0) * Id * kd;
     
     // compute specular component
-    vec3 reflectDir = reflect(-ToLightVector, vertexNormal);
-    vec4 specular = ks * Is * pow(max(dot(ToCameraVector, reflectDir), 0.0), specExp);
+    
+    vec3 h = (ToLightVector + ToCameraVector) / length(ToLightVector + ToCameraVector);
+    vec4 specular = ks * Is * pow(max(dot(vertexNormal, h), 0.0), specExp);
+    
+//    vec3 reflectDir = reflect(-ToLightVector, vertexNormal);
+//    vec4 specular = ks * Is * pow(max(dot(ToCameraVector, reflectDir), 0.0), specExp);
     
     // compute the color using the following equation
     color = vec4(clamp( textureColor.xyz * vec3(ambient + diffuse + specular), 0.0, 1.0), 1.0);
