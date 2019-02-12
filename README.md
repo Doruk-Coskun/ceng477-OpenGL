@@ -2,9 +2,9 @@
 
 ##### Authors: Doruk Coşkun (/Doruk-Coskun) & Çağrı Eser (/cagries)
 
-![An example]()
+![An example](https://raw.githubusercontent.com/Doruk-Coskun/ceng477-OpenGL/add-phong-shading/Homework3/output-images/earth-output.png?token=AYU2WyhJN0CHLsAhLo9M9gcyLo6hFi2mks5cbDRVwA%3D%3D)
 
-![Another example]()
+![Another example](https://raw.githubusercontent.com/Doruk-Coskun/ceng477-OpenGL/add-phong-shading/Homework3/output-images/turkey-output.png?token=AYU2W2i6D7Accxmnbu5dluSbOQBxdx29ks5cbDRqwA%3D%3D)
 
 OpenGL project for CENG477 Computer Graphics lecture.
 
